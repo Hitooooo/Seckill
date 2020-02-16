@@ -85,7 +85,8 @@
                 console.log(data)
                 if(data.code === 0){
                     layer.msg("成功");
-                    // window.location.href="/goods/to_list";
+                    // 登录成功，去商品页
+                    window.location.href="/goods/to_list";
                 }else{
                     layer.msg(data.msg);
                 }
