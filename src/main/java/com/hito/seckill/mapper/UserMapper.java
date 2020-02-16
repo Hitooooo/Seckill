@@ -1,6 +1,7 @@
 package com.hito.seckill.mapper;
 
 import com.hito.seckill.domain.User;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 /**
@@ -9,6 +10,7 @@ import org.apache.ibatis.annotations.Select;
  * @author HitoM
  * @date 2020/2/15 10:45
  **/
+@Mapper
 public interface UserMapper {
     @Select("select * from user where id = #{id}")
     User getUserById(Integer id);
