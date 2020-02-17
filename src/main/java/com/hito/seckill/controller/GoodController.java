@@ -43,7 +43,7 @@ public class GoodController {
         GoodVo goodVo = goodService.getGoodsVoByGoodsId(goodId);
         long startTme = goodVo.getStartDate().getTime();
         long endTime = goodVo.getEndDate().getTime();
-        long now = Instant.now().getEpochSecond() * 1000;
+        long now = System.currentTimeMillis();
 
         int miaoshaStatus;
         int remainSeconds;
@@ -66,7 +66,7 @@ public class GoodController {
         detail.setMiaoshaStatus(miaoshaStatus);
         detail.setRemainSeconds(remainSeconds);
         detail.setUser(user);
-        model.addAttribute("goods", detail);
+        model.addAttribute("detail", detail);
         model.addAttribute("user", user);
         return "good_detail";
     }
