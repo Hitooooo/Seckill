@@ -1,8 +1,10 @@
 package com.hito.seckill.mapper;
 
+import com.hito.seckill.domain.Order;
 import com.hito.seckill.domain.vo.GoodVo;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -30,4 +32,7 @@ public interface GoodMapper {
             "ON mg.goods_id = g.id " +
             "WHERE g.id = #{goodsId}")
     GoodVo getGoodsVoByGoodsId(@Param("goodsId")long goodsId);
+
+    @Update("UPDATE miaosha_goods SET stock_count = stock_count - 1 WHERE goods_id = #{goodsId} ")
+    int reduceStock(Order order);
 }

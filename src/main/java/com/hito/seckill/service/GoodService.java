@@ -1,5 +1,6 @@
 package com.hito.seckill.service;
 
+import com.hito.seckill.domain.Order;
 import com.hito.seckill.domain.vo.GoodVo;
 import com.hito.seckill.mapper.GoodMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,5 +28,30 @@ public class GoodService {
 
     public GoodVo getGoodsVoByGoodsId(long goodsId) {
         return goodMapper.getGoodsVoByGoodsId(goodsId);
+    }
+
+    /**
+     * 判断库存
+     * @param goodsId 商品id
+     * @return 是否能够下单
+     */
+    public boolean checkStockCount(Long goodsId) {
+        GoodVo goodsVo = this.getGoodsVoByGoodsId(goodsId);
+        if (null != goodsVo) {
+            Integer stockCount = goodsVo.getStockCount();
+            return stockCount > 0;
+        }
+        return false;
+    }
+
+    /**
+     * 库存 -1
+     * @param goodsVo 秒杀商品
+     */
+    public boolean reduceStock(GoodVo goodsVo) {
+        Order miaoshaOrder = new Order();
+        miaoshaOrder.setGoodsId(goodsVo.getId());
+        int i = goodMapper.reduceStock(miaoshaOrder);
+        return i > 0;
     }
 }

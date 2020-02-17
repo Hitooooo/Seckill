@@ -39,15 +39,15 @@
             <td>秒杀开始时间</td>
             <td th:text="${#dates.format(detail.goods.startDate, 'yyyy-MM-dd HH:mm:ss')}"></td>
             <td id="miaoshaTip">
-                <input type="hidden" id="remainSeconds" th:value="${detail.remainSeconds}" />
+                <input type="hidden" id="remainSecondsInput" th:value="${detail.remainSeconds}" />
                 <span th:if="${detail.miaoshaStatus eq 0}">秒杀倒计时：<span id="countDown" th:text="${detail.remainSeconds}"></span>秒</span>
                 <span th:if="${detail.miaoshaStatus eq 1}">秒杀进行中</span>
                 <span th:if="${detail.miaoshaStatus eq 2}">秒杀已结束</span>
             </td>
             <td>
-                <form id="miaoshaForm" method="post" action="/miaosha/do_miaosha">
+                <form id="miaoshaForm" method="post" action="/seckill/do_seckill">
                     <button class="btn btn-primary btn-block" type="submit" id="buyButton">立即秒杀</button>
-                    <input type="hidden" name="goods.goodsId" th:value="${detail.goods.id}" />
+                    <input type="hidden" name="goodsId" th:value="${detail.goods.id}" />
                 </form>
             </td>
         </tr>
@@ -72,7 +72,7 @@
     });
 
     function countDown(){
-        let remainSeconds = $("#remainSeconds").val();
+        let remainSeconds = $("#remainSecondsInput").val();
         let timeout;
         if(remainSeconds > 0){//秒杀还没开始，倒计时
             $("#buyButton").attr("disabled", true);
@@ -81,7 +81,7 @@
                 $("#goods.remainSeconds").val(remainSeconds - 1);
                 countDown();
             },1000);
-        }else if(remainSeconds === 0){//秒杀进行中
+        }else if(remainSeconds == 0){//秒杀进行中
             $("#buyButton").attr("disabled", false);
             if(timeout){
                 clearTimeout(timeout);
@@ -89,7 +89,7 @@
             $("#miaoshaTip").html("秒杀进行中");
         }else{//秒杀已经结束
             $("#buyButton").attr("disabled", true);
-            $("#miaoshaTip").html("秒杀已经结束");
+            $("#miaoshaTip").html("秒杀已经结束le");
         }
     }
 
