@@ -8,8 +8,10 @@ import com.hito.seckill.domain.SeckillUser;
 import com.hito.seckill.domain.vo.GoodVo;
 import com.hito.seckill.mapper.OrderMapper;
 import com.hito.seckill.result.CodeMsg;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 秒杀实现
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
  * @date 2020/2/17 22:41
  **/
 @Service
+@Slf4j
 public class SeckillService {
     private final GoodService goodService;
 
@@ -34,14 +37,17 @@ public class SeckillService {
         this.orderMapper = orderMapper;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public OrderInfo doSeckill(SeckillUser user, GoodVo good){
         // 判断库存
         Order order = orderMapper.getMiaoshaOrderByUserIdGoodsId(user.getId(), good.getId());
         boolean available = goodService.checkStockCount(good.getId());
         if (order != null || !available) {
+            log.warn("秒杀失败，重复下单或库存不足");
             return null;
         }
         // 下单
+        goodService.reduceStock(good);
         return orderService.createOrder(user, good);
     }
 }

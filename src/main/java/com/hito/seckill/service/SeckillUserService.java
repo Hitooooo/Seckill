@@ -1,5 +1,6 @@
 package com.hito.seckill.service;
 
+import cn.hutool.core.util.RandomUtil;
 import com.hito.seckill.common.exception.GlobalException;
 import com.hito.seckill.common.redis.SeckillUserKey;
 import com.hito.seckill.common.util.MD5Utils;
@@ -10,6 +11,7 @@ import com.hito.seckill.mapper.SeckillUserMapper;
 import com.hito.seckill.result.CodeMsg;
 import com.sun.deploy.net.HttpResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -63,7 +65,7 @@ public class SeckillUserService {
         String dbPwd = user.getPassword();
         String dbSalt = user.getSalt();
 
-        String inputPwd = MD5Utils.inputPassToDBPass(loginVo.getPassword(), dbSalt);
+        String inputPwd = MD5Utils.formPassToDBPass(loginVo.getPassword(), dbSalt);
         if (!StringUtils.equals(inputPwd, dbPwd)) {
             throw new GlobalException(CodeMsg.PASSWORD_ERROR);
         }
@@ -98,5 +100,23 @@ public class SeckillUserService {
             writeCookie(response, token, seckillUser);
         }
         return seckillUser;
+    }
+
+    public SeckillUser register (SeckillUser user) {
+
+        if (null == user) {
+            throw new GlobalException(CodeMsg.SERVER_ERROR);
+        }
+
+        SeckillUser registerUser = new SeckillUser();
+        BeanUtils.copyProperties(user, registerUser);
+
+        String formPass = user.getPassword();
+        String salt = RandomUtil.randomString(10);
+        String dbPass = MD5Utils.formPassToDBPass(formPass, salt);
+        registerUser.setPassword(dbPass);
+        registerUser.setSalt(salt);
+
+        return seckillUserMapper.insert(registerUser);
     }
 }

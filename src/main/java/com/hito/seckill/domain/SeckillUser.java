@@ -1,6 +1,7 @@
 package com.hito.seckill.domain;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.Date;
 
@@ -11,6 +12,7 @@ import java.util.Date;
  * @date 2020/2/16 16:19
  **/
 @Data
+@ToString
 public class SeckillUser {
     private Long id;
     private String nickname;

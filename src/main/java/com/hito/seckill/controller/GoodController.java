@@ -4,6 +4,7 @@ import com.hito.seckill.domain.SeckillUser;
 import com.hito.seckill.domain.vo.GoodVo;
 import com.hito.seckill.domain.vo.GoodsDetailVo;
 import com.hito.seckill.service.GoodService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +25,7 @@ import java.util.List;
  **/
 @Controller
 @RequestMapping("goods")
+@Slf4j
 public class GoodController {
 
     @Autowired
@@ -33,7 +35,7 @@ public class GoodController {
     public String toList(HttpServletRequest request, HttpServletResponse response,
                          Model model, SeckillUser user){
         List<GoodVo> goodVos = goodService.listGoodsVo();
-        model.addAttribute("user", user);
+        log.info("Query good list success. total count:{}", goodVos.size());
         model.addAttribute("goodsList", goodVos);
         return "good_list";
     }
