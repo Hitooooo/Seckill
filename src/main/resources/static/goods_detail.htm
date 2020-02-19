@@ -156,7 +156,7 @@ function doMiaosha(path){
 			goodsId:$("#goodsId").val()
 		},
 		success:function(data){
-			if(data.code == 0){
+			if(data.code === 0){
 				//window.location.href="/order_detail.htm?orderId="+data.data.id;
 				getMiaoshaResult($("#goodsId").val());
 			}else{
@@ -200,7 +200,7 @@ function getDetail(){
 		url:"/goods/detail/"+goodsId,
 		type:"GET",
 		success:function(data){
-			if(data.code == 0){
+			if(data.code === 0){
 				render(data.data);
 			}else{
 				layer.msg(data.msg);

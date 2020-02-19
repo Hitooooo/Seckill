@@ -33,6 +33,7 @@ public interface GoodMapper {
             "WHERE g.id = #{goodsId}")
     GoodVo getGoodsVoByGoodsId(@Param("goodsId")long goodsId);
 
-    @Update("UPDATE miaosha_goods SET stock_count = stock_count - 1 WHERE goods_id = #{goodsId} ")
+    // stock_count>0 防止超卖
+    @Update("UPDATE miaosha_goods SET stock_count = stock_count - 1 WHERE goods_id = #{goodsId} and stock_count > 0")
     int reduceStock(Order order);
 }
