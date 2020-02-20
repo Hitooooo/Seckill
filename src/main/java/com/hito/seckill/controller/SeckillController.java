@@ -46,7 +46,9 @@ public class SeckillController {
             model.addAttribute("errorMsg", "未登录");
             return "miaosha_fail";
         }
-        Order order = orderMapper.getMiaoshaOrderByUserIdGoodsId(user.getId(), goodsId);
+//        Order order = orderMapper.getMiaoshaOrderByUserIdGoodsId(user.getId(), goodsId);
+        // 从缓存中快速获取
+        Order order = orderService.getMiaoshaOrderByUserIdGoodsId(user.getId(), goodsId);
         if (order != null) {
             model.addAttribute("errorMsg", CodeMsg.REPEATE_MIAOSHA.getMsg());
             return "miaosha_fail";

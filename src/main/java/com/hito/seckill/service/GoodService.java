@@ -3,7 +3,6 @@ package com.hito.seckill.service;
 import com.hito.seckill.domain.Order;
 import com.hito.seckill.domain.vo.GoodVo;
 import com.hito.seckill.mapper.GoodMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
