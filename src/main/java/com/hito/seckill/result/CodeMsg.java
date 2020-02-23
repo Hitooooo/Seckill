@@ -34,6 +34,10 @@ public class CodeMsg {
     public static CodeMsg REPEATE_MIAOSHA = new CodeMsg(500501, "不能重复下单");
     public static CodeMsg MIAOSHA_FAIL = new CodeMsg(500502, "秒杀失败");
 
+    // 商品模块
+    public static final CodeMsg GOOD_NOT_EXIST = new CodeMsg(500600, "商品不存在");
+
+
     private CodeMsg(int code, String msg) {
         this.code = code;
         this.msg = msg;

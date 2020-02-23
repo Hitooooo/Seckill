@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.net.HttpCookie;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -39,14 +41,14 @@ public class InsertUserTest {
         long epochSecond = Instant.now().getEpochSecond();
         List<SeckillUser> miaoshaUsers = new CopyOnWriteArrayList<>();
 
-        IntStream.range(1, 5000)
+        IntStream.range(1, 1000)
                 .parallel().forEach(i -> {
 
             // 生成用户
             SeckillUser user = new SeckillUser();
             user.setId(13000000000L + i);
             user.setNickname("testUser_" + i);
-            String formPass = MD5Utils.inputPassToFormPass(RandomUtil.randomString(10));
+            String formPass = MD5Utils.inputPassToFormPass("123456");
             user.setPassword(formPass);
             user.setHead("head");
             user.setRegisterDate(Date.from(Instant.now()));
@@ -60,7 +62,7 @@ public class InsertUserTest {
             log.info("save user index ={}", user.getId());
         });
 
-        CopyOnWriteArrayList <String> tokens = new CopyOnWriteArrayList <>();
+        CopyOnWriteArrayList<String> tokens = new CopyOnWriteArrayList<>();
         miaoshaUsers.forEach(user -> {
 
             HttpResponse execute = HttpRequest.post("http://localhost:8080/login/do_login")
@@ -72,11 +74,15 @@ public class InsertUserTest {
             if (execute.getStatus() != HttpStatus.HTTP_OK) {
                 throw new RuntimeException("请求错误");
             }
-            String token = execute.getCookie("token").getValue();
-            log.info(user.toString());
-            tokens.add(user.getId()+","+token);
-            log.info("save token index ={}", user.getId());
-
+            HttpCookie cookie = execute.getCookie("token");
+            if (cookie != null) {
+                String token = cookie.getValue();
+                log.info(user.toString());
+                tokens.add(user.getId() + "," + token);
+                log.info("save token index ={}", user.getId());
+            }else{
+                log.warn("获取cookie失败");
+            }
         });
 
         FileUtil.writeUtf8Lines(tokens, "D:/tmp/tokens.txt");
