@@ -1,5 +1,6 @@
 package com.hito.seckill.controller;
 
+import com.hito.seckill.common.access.AccessLimit;
 import com.hito.seckill.domain.vo.LoginVo;
 import com.hito.seckill.result.Result;
 import com.hito.seckill.service.SeckillUserService;
@@ -33,6 +34,7 @@ public class LoginController {
         return "login";
     }
 
+    @AccessLimit(seconds = 1, maxCount = 1, needLogin = false)
     @PostMapping("do_login")
     @ResponseBody
     public Result<Boolean> doLogin(HttpServletResponse response, LoginVo loginVo){

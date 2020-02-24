@@ -81,3 +81,95 @@
 ### 3.接口限流秒杀
 
 固定的用户，在单位时间内访问接口次数限制。**拦截器实现。**
+
+1. 定义限流注解
+
+   ```java
+   @Retention(RetentionPolicy.RUNTIME)
+   @Target(ElementType.METHOD)
+   public @interface AccessLimit {
+       /** 几秒内 */
+       int seconds();
+       /** 最多允许几次访问 */
+       int maxCount();
+       /** 默认需要登录 */
+       boolean needLogin() default true;
+   }
+   ```
+
+2. 编写拦截器
+
+   ```java
+   @Component
+   public class AccessInterceptor extends HandlerInterceptorAdapter {
+       private final SeckillUserService userService;
+       private final RedisService redisService;
+   
+       @Autowired
+       public AccessInterceptor(SeckillUserService userService, RedisService redisService) {
+           this.userService = userService;
+           this.redisService = redisService;
+       }
+   
+       @Override
+       public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+           if (handler instanceof HandlerMethod) {
+               // 判断方法
+               HandlerMethod hm = (HandlerMethod) handler;
+               SeckillUser miaoshaUser = getUser(request, response);
+               UserContext.setUser(miaoshaUser);
+               AccessLimit accessLimit = hm.getMethodAnnotation(AccessLimit.class);
+               // 方法没有注解，直接放行
+               if (Objects.isNull(accessLimit)) {
+                   return true;
+               }
+               int maxCount = accessLimit.maxCount();
+               boolean needLogin = accessLimit.needLogin();
+               int seconds = accessLimit.seconds();
+               String key = request.getRequestURI();
+               if (needLogin) {
+                   if (Objects.isNull(miaoshaUser)) {
+                       render(response, CodeMsg.SERVER_ERROR);
+                       return false;
+                   }
+                   key += "_" + miaoshaUser.getId();
+               }
+               AccessKey accessKey = AccessKey.withExpireSeconds(seconds);
+               Integer currentCount = redisService.get(accessKey, key, Integer.class);
+               if (null == currentCount) {
+                   redisService.set(accessKey, key, 1);
+               } else if (currentCount < maxCount) {
+                   redisService.incr(accessKey, key);
+               } else {
+                   render(response, CodeMsg.ACCESS_LIMIT_REACHED);
+                   return false;
+               }
+           }
+           return true;
+       }
+   }
+   ```
+
+   3. WebConfig中配置拦截器
+
+      ```java
+      @Configuration
+      public class WebMvcConfig extends WebMvcConfigurationSupport {
+          private final AccessInterceptor accessInterceptor;
+          
+          @Override
+          protected void addInterceptors(InterceptorRegistry registry) {
+              registry.addInterceptor(accessInterceptor);
+          }
+          // 过滤静态文件的拦截
+          @Override
+          protected void addResourceHandlers(ResourceHandlerRegistry registry) {      	registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
+          }
+      }
+      ```
+
+      
+
+   
+
+   

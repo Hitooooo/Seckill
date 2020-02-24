@@ -1,5 +1,6 @@
 package com.hito.seckill.controller;
 
+import com.hito.seckill.common.access.AccessLimit;
 import com.hito.seckill.common.redis.GoodKey;
 import com.hito.seckill.domain.SeckillUser;
 import com.hito.seckill.domain.vo.GoodVo;
@@ -45,6 +46,7 @@ public class GoodController {
     ThymeleafViewResolver thymeleafViewResolver;
 
     // produces控制返回的是html模板文件 注意返回responseBody
+    @AccessLimit(seconds = 3, maxCount = 1, needLogin = false)
     @GetMapping(value = "/to_list", produces = "text/html;charset=UTF-8")
     public @ResponseBody
     String toList(HttpServletRequest request, HttpServletResponse response,
