@@ -58,8 +58,8 @@ public class OrderService {
         miaoshaOrder.setGoodsId(goodsVo.getId());
         miaoshaOrder.setOrderId(orderInfo.getId());
         miaoshaOrder.setUserId(user.getId());
-        orderMapper.insertMiaoshaOrder(miaoshaOrder);
-        log.info("成功下单. userId={}, goodsId={}", user.getId(), goodsVo.getId());
+        long l = orderMapper.insertMiaoshaOrder(miaoshaOrder);
+        log.info("成功下单. userId={}, goodsId={},订单id:{}", user.getId(), goodsVo.getId(), l);
         // 缓存下单信息，防止重复下单
         redisService.set(OrderKey.getMiaoshaOrderByUidGid, ""+user.getId()+"_"+goodsVo.getId(), miaoshaOrder);
         return orderInfo;

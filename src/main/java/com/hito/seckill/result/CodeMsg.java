@@ -36,6 +36,7 @@ public class CodeMsg {
 
     // 商品模块
     public static final CodeMsg GOOD_NOT_EXIST = new CodeMsg(500600, "商品不存在");
+    public static CodeMsg ORDER_NOT_EXIST = new CodeMsg(500601, "订单不存在");
 
 
     private CodeMsg(int code, String msg) {
