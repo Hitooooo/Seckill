@@ -24,6 +24,19 @@
 
 ## 三、秒杀设计
 
+首先需要确定下单这一过程，需要哪些操作，如果没有优化的情况下，是如何实现的呢?
+
+1. 确认库存数量可用 ```select store from good where good_id = 123```
+2. 更新库存数量，就是数量减一 ```update good set store = store -1 where good_id = 123```
+3. 插入订单表```insert into order```
+
+显然这是一个事务，其中的任何一个步骤出错，就需要回滚。那这个事务可以放在Java代码中控制，也可以放在mysql的sql语句中控制。在分析这两种方式之前，先看看这个事务的过程有没有问题.第一句查询sql，产生共享锁，可以多个线程同时访问，但是第二个update操作会产生行级锁，多个线程串行执行。第二个事务，只有等前一个事务commit/rollback之后才能从第二步开始执行。**显然，第二个事务开始更新时，此时的store可能是前一个事务已经修改过的，但是第二个可能并不清楚，此时就会产生超卖现象。**那正确的方式应该是怎么样的？
+
+* 方法1：修改第一句为 ```select ... for update```第一步就加锁
+* 方法2：直接做update操作，如果返回结果错误，抛出异常自动回滚
+
+* Java代码控制
+
 ### 1. 缓存
 
 #### 页面缓存
@@ -150,25 +163,25 @@
    }
    ```
 
-   3. WebConfig中配置拦截器
+3. WebConfig中配置拦截器
 
-      ```java
-      @Configuration
-      public class WebMvcConfig extends WebMvcConfigurationSupport {
-          private final AccessInterceptor accessInterceptor;
-          
-          @Override
-          protected void addInterceptors(InterceptorRegistry registry) {
-              registry.addInterceptor(accessInterceptor);
-          }
-          // 过滤静态文件的拦截
-          @Override
-          protected void addResourceHandlers(ResourceHandlerRegistry registry) {      	registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
-          }
-      }
-      ```
+   ```java
+   @Configuration
+   public class WebMvcConfig extends WebMvcConfigurationSupport {
+       private final AccessInterceptor accessInterceptor;
+       
+       @Override
+       protected void addInterceptors(InterceptorRegistry registry) {
+           registry.addInterceptor(accessInterceptor);
+       }
+       // 过滤静态文件的拦截
+       @Override
+       protected void addResourceHandlers(ResourceHandlerRegistry registry) {      	registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
+       }
+   }
+   ```
 
-      
+   
 
    
 
