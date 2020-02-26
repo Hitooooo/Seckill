@@ -1,14 +1,20 @@
 # 一个Springboot秒杀
 
+> [掘金观后感](https://juejin.im/post/5aabd1956fb9a028d82b8738)文章帮助梳理。
+
 ## 一、基本的登录和分布式Session
 
 ### Login
 
-### 根据Cookie实现登录状态的保存
+### 分布式Session
+
+根据Cookie实现登录状态的保存在Redis等内存数据库，所有的session获取和保存都在redis中操作。
+
+[[分布式session的几种实现方式](https://www.cnblogs.com/daofaziran/p/10933221.html)](https://www.cnblogs.com/daofaziran/p/10933221.html)
 
 ## 二、商品列表和商品详情
 
-### Springboot静态文件的过滤
+Springboot静态文件的过滤
 
 ```java
     @Configuration
@@ -38,23 +44,144 @@
 
 解决了超卖问题，那么这个事务的过程，是不是还可以优化呢？
 
+![](https://user-gold-cdn.xitu.io/2018/3/16/1622f2a838b0137e?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
 对于insetr操作，mysql是不会产生行级锁的，可以放在第一步做，减少锁的持有时间（inset耗时）。有了以上两个操作，现在来看放在java代码中，和sql中怎么操作。
 
-### 1. 缓存
+### Java代码
 
-#### 页面缓存
+通过异常机制，让spring帮我们回滚。
+
+```java
+@Override
+public SeckillExecution executeSeckill(Long seckillId, Long userPhone, String md5) throws SeckillException, RepeatKillException, SeckillCloseException {
+    if (StringUtils.isEmpty(md5) || !md5.equals(getMD5(seckillId))) {
+        throw new SeckillException(SeckillStatEnum.DATA_REWRITE.getStateInfo());
+    }
+    //执行秒杀逻辑:1.减库存.2.记录购买行为
+    // 优化为先记录购买行为，再执行减操作
+    Date nowTime = new Date();
+    try {
+        //记录购买行为.直接插入订单表
+        int inserCount = successKilledDao.insertSuccessKilled(seckillId, userPhone);
+        if (inserCount <= 0) {
+            //重复秒杀rollback
+            throw new RepeatKillException(SeckillStatEnum.REPEAT_KILL.getStateInfo());
+        } else {
+            //减库存  热点商品竞争
+            int updateCount = seckillDao.reduceNumber(seckillId, nowTime);
+            if (updateCount <= 0) {
+                //rollback
+                throw new SeckillCloseException(SeckillStatEnum.END.getStateInfo());
+            } else {
+                //秒杀成功  commit
+                SuccessKilled successKilled = successKilledDao.queryByIdWithSeckill(seckillId, userPhone);
+                return new SeckillExecution(seckillId, SeckillStatEnum.SUCCESS, successKilled);
+            }
+
+        }
+    } catch (SeckillCloseException e1) {
+        throw e1;
+    } catch (RepeatKillException e2) {
+        throw e2;
+    } catch (Exception e) {
+        LOG.error(e.getMessage());
+        //所有的编译期异常转化为运行期异常,spring的声明式事务做rollback
+        throw new SeckillException("seckill inner error: " + e.getMessage());
+    }
+
+}
+```
+
+### Mysql流程控制
+
+事务在Java代码中控制，免不了需要多次的网络IO，如果将整个下单过程放到MySQL服务器中，可以减少多次的网络请求耗时。也算是一种优化。
+
+```mysql
+
+
+-- 秒杀执行储存过程
+DELIMITER $$ -- console ; 转换为
+$$
+-- 定义储存过程
+-- 参数： in 参数   out输出参数
+-- row_count() 返回上一条修改类型sql(delete,insert,update)的影响行数
+-- row_count:0:未修改数据 ; >0:表示修改的行数； <0:sql错误
+CREATE PROCEDURE `seckill`.`execute_seckill`
+  (IN v_seckill_id BIGINT, IN v_phone BIGINT,
+   IN v_kill_time  TIMESTAMP, OUT r_result INT)
+  BEGIN
+    DECLARE insert_count INT DEFAULT 0;
+    START TRANSACTION;
+    INSERT IGNORE INTO success_killed
+    (seckill_id, user_phone, create_time)
+    VALUES (v_seckill_id, v_phone, v_kill_time);
+    SELECT row_count()
+    INTO insert_count;
+    IF (insert_count = 0)
+    THEN
+      ROLLBACK;
+      SET r_result = -1;
+    ELSEIF (insert_count < 0)
+      THEN
+        ROLLBACK;
+        SET r_result = -2;
+    ELSE
+      UPDATE seckill
+      SET number = number - 1
+      WHERE seckill_id = v_seckill_id
+            AND end_time > v_kill_time
+            AND start_time < v_kill_time
+            AND number > 0;
+      SELECT row_count()
+      INTO insert_count;
+      IF (insert_count = 0)
+      THEN
+        ROLLBACK;
+        SET r_result = 0;
+      ELSEIF (insert_count < 0)
+        THEN
+          ROLLBACK;
+          SET r_result = -2;
+      ELSE
+        COMMIT;
+        SET r_result = 1;
+
+      END IF;
+    END IF;
+  END;
+$$
+--  储存过程定义结束
+DELIMITER ;
+SET @r_result = -3;
+--  执行储存过程
+CALL execute_seckill(1003, 13502178891, now(), @r_result);
+-- 获取结果
+SELECT @r_result;
+
+```
+
+
+
+### 具体优化
+
+有了上面的控制保证流程的正确性，现在可以引入一些中间件或者缓存策略，减少mysql的访问数。
+
+#### 1. 缓存
+
+##### 页面缓存
 
 1. 商品列表页面缓存到Redis，未查询到缓存就手动调用thymeleaf解析html
 2. 商品详情页缓存
 
-#### 对象缓存
+##### 对象缓存
 
-### 2. 快速失败
+#### 2. 快速失败
 
 * redis
 * 内存标记
 
-### 3. 消息队列异步处理
+#### 3. 消息队列异步处理
 
 
 
